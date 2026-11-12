@@ -8,7 +8,8 @@ name: windows-build
 #   git tag v0.8-ma1 && git push origin v0.8-ma1
 #
 # Speed: the installed Python packages, the models and PyInstaller's work
-# folder are cached, so later runs skip the downloads and most of the analysis.
+# folder are cached. The caches are saved right after they are filled, so a
+# failing test later in the run does not throw them away.
 on:
   workflow_dispatch:
   push:
@@ -38,9 +39,9 @@ jobs:
           python-version: "3.12"
 
       # The whole Python installation incl. site-packages; a hit skips pip.
-      - name: Cache Python packages
+      - name: Restore Python packages
         id: pycache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ${{ env.pythonLocation }}
           key: py-${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ hashFiles('environments/requirements_win_cpu.txt') }}
@@ -49,9 +50,16 @@ jobs:
         if: steps.pycache.outputs.cache-hit != 'true'
         run: pip install -r environments/requirements_win_cpu.txt
 
-      - name: Cache models
+      - name: Save Python packages
+        if: steps.pycache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ steps.pycache.outputs.cache-primary-key }}
+
+      - name: Restore models
         id: modelcache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: |
             models/canary-1b-v2
@@ -62,9 +70,19 @@ jobs:
         if: steps.modelcache.outputs.cache-hit != 'true'
         run: python tools/download_models.py
 
-      # PyInstaller's analysis cache; reused across commits, refreshed each run.
-      - name: Cache PyInstaller work folder
-        uses: actions/cache@v4
+      - name: Save models
+        if: steps.modelcache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            models/canary-1b-v2
+            models/fast
+          key: ${{ steps.modelcache.outputs.cache-primary-key }}
+
+      # PyInstaller's analysis cache; reused across commits.
+      - name: Restore PyInstaller work folder
+        id: pyicache
+        uses: actions/cache/restore@v4
         with:
           path: build
           key: pyi-${{ hashFiles('environments/requirements_win_cpu.txt') }}-${{ github.sha }}
@@ -73,6 +91,13 @@ jobs:
 
       - name: Build with PyInstaller
         run: pyinstaller --noconfirm --workpath build --distpath dist pyinstaller/noScribe_win.spec
+
+      - name: Save PyInstaller work folder
+        if: steps.pyicache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build
+          key: ${{ steps.pyicache.outputs.cache-primary-key }}
 
       - name: Check bundled models and plugins
         shell: pwsh
@@ -89,8 +114,23 @@ jobs:
           }
           "{0:N0} MB" -f ((Get-ChildItem -Recurse dist/noScribe | Measure-Object Length -Sum).Sum / 1MB)
 
-      # Upload before the smoke tests, so a failing test still leaves a build
-      # to look at.
+      - name: Smoke test, list models
+        run: dist\noScribe\noScribe.exe --help-models
+
+      - name: Smoke test, Canary to PDF (20 s, with speaker detection)
+        shell: pwsh
+        run: |
+          dist\noScribe\noScribe.exe --no-gui --model local-canary:canary-1b-v2 --language de --speaker-detection auto --stop 00:00:20 tests\data\interview.mp3 smoke_canary.pdf
+          if (-not (Test-Path smoke_canary.pdf)) { throw "No PDF written" }
+
+      - name: Smoke test, Whisper fast to text (20 s)
+        shell: pwsh
+        run: |
+          dist\noScribe\noScribe.exe --no-gui --model local-whisper:fast --language de --speaker-detection none --stop 00:00:20 tests\data\interview.mp3 smoke_whisper.txt
+          if (-not (Test-Path smoke_whisper.txt)) { throw "No transcript written" }
+          Get-Content smoke_whisper.txt
+
+      # Only a build that passed the tests is uploaded.
       - name: Upload app
         uses: actions/upload-artifact@v4
         with:
@@ -99,12 +139,10 @@ jobs:
           compression-level: 0   # models and DLLs barely compress
           retention-days: 14
 
-      - name: Smoke test, list models
-        run: dist\noScribe\noScribe.exe --help-models
-
-      - name: Smoke test, transcribe 20 s with Canary to PDF
-        shell: pwsh
-        run: |
-          dist\noScribe\noScribe.exe --no-gui --model local-canary:canary-1b-v2 --language de --speaker-detection none --stop 00:00:20 tests\data\interview.mp3 smoke.pdf
-          if (-not (Test-Path smoke.pdf)) { throw "No PDF written" }
-          Get-Item smoke.pdf
+      - name: Upload smoke test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results
+          path: smoke_*
+          if-no-files-found: ignore

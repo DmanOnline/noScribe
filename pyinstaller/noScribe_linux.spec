@@ -4,6 +4,7 @@ import os
 import sys
 
 from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import copy_metadata
 from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.utils.hooks import collect_all
 
@@ -20,6 +21,7 @@ datas += collect_data_files('noScribe.plugins', includes=['**/backend.json'])
 # Canary plugin (onnx-asr): its preprocessors/resamplers are packaged .onnx/.npz
 # data; the worker module is imported lazily from the plugin.
 datas += collect_data_files('onnx_asr')
+datas += copy_metadata('onnx-asr')  # onnx-asr reads its own version at import
 hiddenimports += ['noScribe.canary_mp_worker'] + collect_submodules('onnx_asr')
 # Optional model folder; the catalogue only lists it when the ONNX files are present.
 if os.path.isdir(os.path.join(SPECPATH, '..', 'models', 'canary-1b-v2')):

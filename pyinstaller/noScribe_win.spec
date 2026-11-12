@@ -41,6 +41,7 @@ noScribe_datas += _plugin_manifests
 # Canary plugin (onnx-asr): its preprocessors/resamplers are packaged .onnx/.npz
 # data; the worker module is imported lazily from the plugin.
 noScribe_datas += collect_data_files('onnx_asr')
+noScribe_datas += copy_metadata('onnx-asr')  # onnx-asr reads its own version at import
 noScribe_hiddenimports += ['noScribe.canary_mp_worker'] + collect_submodules('onnx_asr')
 # Optional model folder; the catalogue only lists it when the ONNX files are present.
 if os.path.isdir(os.path.join(SPECPATH, '..', 'models', 'canary-1b-v2')):
