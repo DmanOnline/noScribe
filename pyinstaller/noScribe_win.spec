@@ -34,7 +34,10 @@ noScribe_datas += [
 ('../prompts/prompt_nd.yml', 'prompts/'), 
 ('../README.md', '.')]
 noScribe_datas += collect_data_files('customtkinter')
-noScribe_datas += collect_data_files('noScribe.plugins', includes=['**/backend.json'])
+_plugin_manifests = collect_data_files('noScribe.plugins', includes=['**/backend.json'])
+if not _plugin_manifests:
+    raise SystemExit('noScribe.plugins not importable: run PyInstaller with the repository root on PYTHONPATH')
+noScribe_datas += _plugin_manifests
 # Canary plugin (onnx-asr): its preprocessors/resamplers are packaged .onnx/.npz
 # data; the worker module is imported lazily from the plugin.
 noScribe_datas += collect_data_files('onnx_asr')
@@ -65,11 +68,17 @@ noScribe_datas += copy_metadata('pyannote.database')
 noScribe_datas += copy_metadata('pyannote.metrics')
 noScribe_datas += copy_metadata('pyannote.pipeline')
 noScribe_binaries += collect_dynamic_libs('pyannote')
-noScribe_binaries += collect_dynamic_libs('torchvision')
-_, torchvision_path = get_package_paths('torchvision')
-torchvision_stable_extension = os.path.join(torchvision_path, '_C_stable.pyd')
-if os.path.exists(torchvision_stable_extension):
-    noScribe_binaries.append((torchvision_stable_extension, 'torchvision'))
+# torchvision is optional: present in the conda build environment, not in a
+# plain pip install of requirements_win_cpu.txt.
+try:
+    _, torchvision_path = get_package_paths('torchvision')
+except ValueError:
+    torchvision_path = None
+if torchvision_path:
+    noScribe_binaries += collect_dynamic_libs('torchvision')
+    torchvision_stable_extension = os.path.join(torchvision_path, '_C_stable.pyd')
+    if os.path.exists(torchvision_stable_extension):
+        noScribe_binaries.append((torchvision_stable_extension, 'torchvision'))
 noScribe_hiddenimports += collect_submodules('pyannote')
 noScribe_hiddenimports += collect_submodules('scipy')
 # noScribe_hiddenimports += ['scipy._lib.array_api_compat.numpy.fft']

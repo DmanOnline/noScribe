@@ -3,9 +3,12 @@ name: windows-build
 # Builds the Windows CPU version with the models bundled (Canary 1B v2 and
 # Whisper "fast"), as a folder you unzip and run. No NVIDIA GPU needed.
 #
-# Not on every push, because a build takes 30 to 60 minutes. Start it by hand
+# Not on every push, because a build takes a while. Start it by hand
 # (Actions > windows-build > Run workflow) or push a version tag, e.g.
 #   git tag v0.8-ma1 && git push origin v0.8-ma1
+#
+# Speed: the installed Python packages, the models and PyInstaller's work
+# folder are cached, so later runs skip the downloads and most of the analysis.
 on:
   workflow_dispatch:
   push:
@@ -14,6 +17,11 @@ on:
 
 permissions:
   contents: read
+
+env:
+  # PyInstaller's spec collects data from the noScribe package itself.
+  PYTHONPATH: ${{ github.workspace }}
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
 jobs:
   build:
@@ -24,17 +32,25 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Python
+        id: python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: "pip"
+
+      # The whole Python installation incl. site-packages; a hit skips pip.
+      - name: Cache Python packages
+        id: pycache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.pythonLocation }}
+          key: py-${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ hashFiles('environments/requirements_win_cpu.txt') }}
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r environments/requirements_win_cpu.txt
+        if: steps.pycache.outputs.cache-hit != 'true'
+        run: pip install -r environments/requirements_win_cpu.txt
 
       - name: Cache models
+        id: modelcache
         uses: actions/cache@v4
         with:
           path: |
@@ -43,17 +59,45 @@ jobs:
           key: models-${{ hashFiles('tools/download_models.py') }}
 
       - name: Download models
+        if: steps.modelcache.outputs.cache-hit != 'true'
         run: python tools/download_models.py
 
-      - name: Build with PyInstaller
-        run: pyinstaller --noconfirm --clean pyinstaller/noScribe_win.spec
+      # PyInstaller's analysis cache; reused across commits, refreshed each run.
+      - name: Cache PyInstaller work folder
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: pyi-${{ hashFiles('environments/requirements_win_cpu.txt') }}-${{ github.sha }}
+          restore-keys: |
+            pyi-${{ hashFiles('environments/requirements_win_cpu.txt') }}-
 
-      - name: Check bundled models
+      - name: Build with PyInstaller
+        run: pyinstaller --noconfirm --workpath build --distpath dist pyinstaller/noScribe_win.spec
+
+      - name: Check bundled models and plugins
         shell: pwsh
         run: |
-          Get-ChildItem -Recurse dist/noScribe/_internal/models | Select-Object FullName, Length | Format-Table -AutoSize
-          if (-not (Test-Path dist/noScribe/_internal/models/canary-1b-v2/encoder-model.int8.onnx)) { throw "Canary missing" }
-          if (-not (Test-Path dist/noScribe/_internal/models/fast/model.bin)) { throw "Whisper fast missing" }
+          $base = "dist/noScribe/_internal"
+          foreach ($f in @(
+              "models/canary-1b-v2/encoder-model.int8.onnx",
+              "models/canary-1b-v2/silero-vad/silero_vad.onnx",
+              "models/fast/model.bin",
+              "noScribe/plugins/local_canary/backend.json",
+              "noScribe/plugins/local_whisper/backend.json",
+              "trans/noScribe.nl.yml")) {
+            if (-not (Test-Path "$base/$f")) { throw "Missing in build: $f" }
+          }
+          "{0:N0} MB" -f ((Get-ChildItem -Recurse dist/noScribe | Measure-Object Length -Sum).Sum / 1MB)
+
+      # Upload before the smoke tests, so a failing test still leaves a build
+      # to look at.
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: noScribe-windows-cpu
+          path: dist/noScribe
+          compression-level: 0   # models and DLLs barely compress
+          retention-days: 14
 
       - name: Smoke test, list models
         run: dist\noScribe\noScribe.exe --help-models
@@ -64,11 +108,3 @@ jobs:
           dist\noScribe\noScribe.exe --no-gui --model local-canary:canary-1b-v2 --language de --speaker-detection none --stop 00:00:20 tests\data\interview.mp3 smoke.pdf
           if (-not (Test-Path smoke.pdf)) { throw "No PDF written" }
           Get-Item smoke.pdf
-
-      - name: Upload app
-        uses: actions/upload-artifact@v4
-        with:
-          name: noScribe-windows-cpu
-          path: dist/noScribe
-          compression-level: 1
-          retention-days: 14
