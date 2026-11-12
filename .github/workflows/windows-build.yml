@@ -19,7 +19,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write   # to publish a release for a version tag
 
 env:
   # PyInstaller's spec collects data from the noScribe package itself.
@@ -141,6 +141,26 @@ jobs:
           path: installer/*.exe
           compression-level: 0
           retention-days: 30
+
+      # A version tag (v...) publishes the installer as a GitHub Release, a
+      # fixed download page that does not expire like artifacts do.
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = @"
+          noScribe voor Windows (alleen CPU, geen NVIDIA-kaart nodig), met Whisper large-v3-turbo.
+
+          Installeren: download noScribe_setup en dubbelklik. Er zijn geen beheerdersrechten nodig.
+          Daarna staat noScribe in het Startmenu en op het bureaublad.
+
+          Nieuw ten opzichte van de originele noScribe: opnemen met de microfoon, PDF als uitvoer,
+          Nederlandse interface, kleuren van Stichting Mijn Aansluiting, laptop blijft wakker tijdens
+          opnemen en omzetten, snellere sprekerherkenning op de CPU.
+          "@
+          gh release create "${{ github.ref_name }}" installer/*.exe --repo "${{ github.repository }}" --title "noScribe ${{ github.ref_name }}" --notes $notes
 
       - name: Upload app folder (without installer)
         uses: actions/upload-artifact@v4

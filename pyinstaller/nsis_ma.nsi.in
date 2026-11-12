@@ -5,7 +5,7 @@
 #    administrator rights are needed (company laptops)
 #  - Dutch and English installer pages
 #  - Start menu and desktop shortcuts
-#  - LZMA compression (NSIS cannot write installers larger than 2 GB)
+#  - zlib compression (fast; NSIS cannot write installers larger than 2 GB)
 #  Placeholders #*...*# are filled in by tools/make_installer.py.
 ############################################################################
 
@@ -31,7 +31,8 @@ VIAddVersionKey "LegalCopyright"  "${COPYRIGHT}"
 VIAddVersionKey "FileDescription"  "${DESCRIPTION}"
 VIAddVersionKey "FileVersion"  "${VERSION}"
 
-SetCompressor /SOLID lzma
+; zlib: fast to build; the models are already compressed, so LZMA gains little
+SetCompressor zlib
 Name "${APP_NAME}"
 Caption "${APP_NAME} installeren"
 OutFile "${INSTALLER_NAME}"
