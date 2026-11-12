@@ -118,9 +118,26 @@ noScribe_license_datas = collect_license_files(
 
 noScribe_pyz = PYZ(noScribe_a.pure, noScribe_a.zipped_data, cipher=block_cipher)
 
+# Start screen with a status line, shown by the bootloader the moment the exe
+# is double-clicked (also while Windows Defender scans the files on the first
+# start). noScribe/__main__.py updates the text and main.py closes it once the
+# window is ready.
+noScribe_splash = Splash(
+    '../img/splash.png',
+    binaries=noScribe_a.binaries,
+    datas=noScribe_a.datas,
+    text_pos=(42, 230),
+    text_size=11,
+    text_color='#CDDCF0',
+    text_default='noScribe wordt gestart...',
+    minify_script=True,
+    always_on_top=False,
+)
+
 noScribe_exe = EXE(
     noScribe_pyz,
     noScribe_a.scripts,
+    noScribe_splash,
     [],
     exclude_binaries=True,
     name='noScribe',
@@ -129,7 +146,8 @@ noScribe_exe = EXE(
     strip=False,
     upx=False,
     # console=False,
-    hide_console="hide-late",
+    # hide the empty console right away; the splash screen shows the progress
+    hide_console="hide-early",
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -144,6 +162,7 @@ noScribe_coll = COLLECT(
     noScribe_a.binaries,
     noScribe_a.zipfiles,
     noScribe_a.datas,
+    noScribe_splash.binaries,
     noScribe_license_datas,
     strip=False,
     upx=False,

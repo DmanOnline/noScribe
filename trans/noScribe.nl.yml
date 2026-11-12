@@ -222,3 +222,5 @@ nl:
   canary_language_fallback: 'Canary kan de taal niet zelf herkennen (%{reason}). Er wordt getranscribeerd als "%{lang}". Kies zelf de taal voor het beste resultaat.'
   label_output_format: 'Uitvoer als:'
   tooltip_output_format: 'Bestandsformaat van het transcript. PDF om te delen of af te drukken, HTML om na te kijken in de noScribe Editor, TXT voor platte tekst, VTT voor ondertitels.'
+  splash_opening_window: 'Venster openen...'
+  splash_loading_models: 'Spraakmodellen zoeken...'

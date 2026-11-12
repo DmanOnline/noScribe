@@ -90,6 +90,7 @@ from .plugins.remote_profiles import (
 )
 from .tkHyperlinkManager import HyperlinkManager
 from .record_dialog import RecordDialog
+from .splash import splash_close, splash_status
 from .worker_errors import WorkerError, WorkerRetryError
 
 if platform.system() == "Darwin": # = MAC
@@ -896,6 +897,7 @@ def _init_app_state(app):
         force_diarization_cpu=force_pyannote_cpu,
         vad_threshold=vad_threshold,
     )
+    splash_status(t('splash_loading_models'))
     app.inference_backend = create_builtin_registry(
         whisper_models={
             name: str(model.path)
@@ -4485,6 +4487,8 @@ def noScribeMain():
 
     # Parse command line arguments
     args = parse_cli_args()
+    if args.help_models or getattr(args, 'no_gui', False):
+        splash_close()  # command line use: no start screen
 
     # Handle special case: show available models
     if args.help_models:
@@ -4502,7 +4506,11 @@ def noScribeMain():
             sys.exit(1)
 
     # Default: show GUI, even with CLI args
-    app = App()
+    splash_status(t('splash_opening_window'))
+    try:
+        app = App()
+    finally:
+        splash_close()
 
     # If arguments were provided, prefill and optionally auto-start
     try:

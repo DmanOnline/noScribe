@@ -222,3 +222,5 @@ en:
   canary_language_fallback: 'Canary cannot detect the language (%{reason}). Transcribing as "%{lang}". Choose the language yourself for the best result.'
   label_output_format: 'Output as:'
   tooltip_output_format: 'File format of the transcript. PDF to share or print, HTML to review in the noScribe Editor, TXT for plain text, VTT for subtitles.'
+  splash_opening_window: 'Opening the window...'
+  splash_loading_models: 'Looking for speech models...'
