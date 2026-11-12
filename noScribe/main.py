@@ -300,10 +300,10 @@ config['app_version'] = app_version
 # the file type list of the save dialog and for the format dialog of a batch, so
 # the user sees the same names everywhere.
 OUTPUT_FILETYPES = {
+    'pdf': 'PDF',
     'html': 'noScribe Transcript',
     'txt': 'Text only',
     'vtt': 'WebVTT Subtitles (also for EXMARaLDA)',
-    'pdf': 'PDF',
 }
 
 def save_config():
@@ -943,7 +943,9 @@ def _prepare_model_menu(app, menu) -> None:
 
 def _model_selection_label(app, preferred_ref: str | None) -> str | None:
     """Keep an available selection, otherwise prefer the bundled precise model."""
-    for ref in (preferred_ref, str(ModelRef(LOCAL_WHISPER_BACKEND, "precise"))):
+    for ref in (preferred_ref, "local-canary:canary-1b-v2",
+                str(ModelRef(LOCAL_WHISPER_BACKEND, "precise")),
+                str(ModelRef(LOCAL_WHISPER_BACKEND, "fast"))):
         if ref in app.transcription_model_labels:
             return app.transcription_model_labels[ref]
     return next(iter(app.transcription_model_options), None)
@@ -1078,6 +1080,18 @@ class App(ctk.CTk):
         self.button_transcript_file = ctk.CTkButton(self.frame_transcript_file, width=45, height=29, text='📂', command=self.button_transcript_file_event)
         self.button_transcript_file.place(x=213, y=2)
 
+        # output format, visible at a glance instead of hidden in the save dialog
+        self.label_output_format = ctk.CTkLabel(self.scrollable_options, text=t('label_output_format'))
+        self.label_output_format.pack(padx=20, pady=[0,0], anchor='w')
+        self.output_format_labels = {ext: ext.upper() for ext in OUTPUT_FILETYPES}
+        self.segmented_output_format = ctk.CTkSegmentedButton(
+            self.scrollable_options, width=260,
+            values=list(self.output_format_labels.values()),
+            command=self._on_output_format_selected)
+        self.segmented_output_format.pack(padx=20, pady=[0,10], anchor='w')
+        self.segmented_output_format.set(self.output_format_labels.get(get_config('default_filetype', 'pdf'), 'PDF'))
+        CTkToolTip(self.label_output_format, text=t('tooltip_output_format'))
+
         # Options grid
         self.frame_options = ctk.CTkFrame(self.scrollable_options, width=250, fg_color='transparent')
         self.frame_options.pack_propagate(False)
@@ -1159,7 +1173,7 @@ class App(ctk.CTk):
                                                        values=list(self.transcription_model_options.keys()),
                                                        dynamic_resizing=False)
         self.option_menu_whisper_model.grid(column=1, row=3, sticky='e', pady=5)
-        last_whisper_model = str(_model_ref(get_config('last_whisper_model', 'precise')))
+        last_whisper_model = str(_model_ref(get_config('last_whisper_model', 'local-canary:canary-1b-v2')))
         selected_label = _model_selection_label(self, last_whisper_model)
         if selected_label is not None:
             self.option_menu_whisper_model.set(selected_label)
@@ -2648,7 +2662,7 @@ class App(ctk.CTk):
     def create_default_transcript_names(self, dir=None):
         self.transcript_files_list = []
         if 'default_filetype' not in config:
-            config['default_filetype'] = 'html'
+            config['default_filetype'] = 'pdf'
 
         # Collect audio file names.
         for f in self.audio_files_list:
@@ -2675,6 +2689,18 @@ class App(ctk.CTk):
             log_msg += f'\n{fn}'
         self.logn(log_msg)
 
+    def _on_output_format_selected(self, label):
+        ext = next((e for e, l in self.output_format_labels.items() if l == label), None)
+        if ext is None or not self.set_output_filetype(ext):
+            return
+        # give already chosen transcript names the new extension
+        if self.transcript_files_list:
+            self.transcript_files_list = [Path(f).with_suffix(f'.{ext}') for f in self.transcript_files_list]
+            if len(self.transcript_files_list) == 1:
+                self.button_transcript_file_name.configure(text=self.transcript_files_list[0].name)
+            self.logn()
+            self.logn(t('log_transcript_filename') + ''.join(f'\n{f}' for f in self.transcript_files_list))
+
     def set_output_filetype(self, file_ext):
         """Remember the transcript format. `default_filetype` is used to generate
         transcript names, `last_filetype` preselects the save dialog; they must
@@ -2684,6 +2710,9 @@ class App(ctk.CTk):
             return False
         config['default_filetype'] = file_ext
         config['last_filetype'] = file_ext
+        selector = getattr(self, 'segmented_output_format', None)
+        if selector is not None:
+            selector.set(self.output_format_labels[file_ext])
         return True
 
     def ask_output_format(self):
@@ -2696,9 +2725,9 @@ class App(ctk.CTk):
         """
         if getattr(self, '_headless', False):
             return None
-        current = config.get('last_filetype', 'html')
+        current = config.get('last_filetype', 'pdf')
         if current not in OUTPUT_FILETYPES:
-            current = 'html'
+            current = 'pdf'
 
         dlg = ctk.CTkToplevel(self)
         dlg.title('noScribe')
@@ -2805,7 +2834,7 @@ class App(ctk.CTk):
             _initialdir = ''
             _initialfile = ''            
         if not ('last_filetype' in config):
-            config['last_filetype'] = 'html'
+            config['last_filetype'] = 'pdf'
         filetypes = [(desc, f'*.{ext}') for ext, desc in OUTPUT_FILETYPES.items()]
         for i, ft in enumerate(filetypes):
             if ft[1] == f'*.{config["last_filetype"]}':

@@ -152,7 +152,7 @@ def test_catalogue_lists_model_when_files_present(models_dir):
     models = [m for m in registry.list_models("transcription") if m.ref.backend_id == "local-canary"]
     assert [str(m.ref) for m in models] == ["local-canary:canary-1b-v2"]
     assert models[0].capabilities == frozenset({"transcription"})
-    assert "canary-1b-v2" in registry.model_options("transcription")
+    assert "Canary" in registry.model_options("transcription")
 
 
 @pytest.mark.parametrize("kwargs", [{"vad": False}, {"int8": False}])

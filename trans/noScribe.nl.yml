@@ -8,13 +8,17 @@ nl:
     macOS-versie door Philipp Schneider
 
     gebouwd op Whisper (OpenAI), faster-whisper (Guillaume Klein) & pyannote (Hervé Bredin)
-  welcome_instructions: >
+  welcome_instructions: |
 
-    Kies links een audiobestand, of neem direct op met de microfoonknop, en kies waar het transcript wordt opgeslagen.
-    Heb wat geduld: het omzetten kan 2 tot 5 keer zo lang duren als de opname zelf. Test je instellingen eerst
-    op een kort stuk voordat je de hele opname omzet. (Start = 00.00.00 en Stop = 00.03.00 zet
-    de eerste 3 minuten om.)
+    Zo werkt het:
 
+    1. Audio: kies links een bestand met 📂, of neem direct op met de roze microfoonknop 🎙.
+    2. Uitvoer als: kies het formaat van het transcript. PDF is standaard. Kies HTML als je het transcript daarna in de noScribe Editor wilt nakijken.
+    3. Taal: kies de taal die gesproken wordt (standaard Nederlands). Canary herkent de taal niet zelf.
+    4. Model: "Canary" is het standaardmodel, voor Nederlands en 24 andere Europese talen. "fast" (Whisper) is de reserve voor andere talen. Beide draaien op deze computer, er gaat niets naar internet.
+    5. Druk op Start. Het transcript verschijnt hier terwijl het wordt gemaakt en wordt automatisch opgeslagen.
+
+    Heb wat geduld: op een laptop zonder speciale videokaart kan het omzetten ongeveer even lang duren als de opname zelf. Test je instellingen eerst op een kort stuk (Start = 00:00:00 en Stop = 00:03:00 zet de eerste 3 minuten om).
 
     Veel succes!
 
@@ -216,3 +220,5 @@ nl:
   record_file_prefix: 'Opname'
   record_folder_name: 'Opnames'
   canary_language_fallback: 'Canary kan de taal niet zelf herkennen (%{reason}). Er wordt getranscribeerd als "%{lang}". Kies zelf de taal voor het beste resultaat.'
+  label_output_format: 'Uitvoer als:'
+  tooltip_output_format: 'Bestandsformaat van het transcript. PDF om te delen of af te drukken, HTML om na te kijken in de noScribe Editor, TXT voor platte tekst, VTT voor ondertitels.'

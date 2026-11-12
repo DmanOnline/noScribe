@@ -38,6 +38,10 @@ def _load_manifest() -> PluginManifest:
         return PluginManifest.from_mapping(json.load(stream))
 
 
+# Short, readable names for the model menu (it is narrow).
+_DISPLAY_NAMES = {"canary-1b-v2": "Canary"}
+
+
 class LocalCanaryPlugin:
     def __init__(
         self,
@@ -57,7 +61,7 @@ class LocalCanaryPlugin:
         return [
             ModelDescriptor(
                 ref=ModelRef(self.manifest.id, model_id),
-                display_name=model_id,
+                display_name=_DISPLAY_NAMES.get(model_id, model_id),
                 engine=self.manifest.engine or "canary",
                 capabilities=self.manifest.capabilities,
             )
