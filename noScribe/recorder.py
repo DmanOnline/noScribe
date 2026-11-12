@@ -16,6 +16,8 @@ from pathlib import Path
 
 import numpy as np
 
+from . import keep_awake
+
 
 @dataclass(frozen=True)
 class InputDevice:
@@ -84,6 +86,7 @@ class Recorder:
         self._stream = None
         self._writer: threading.Thread | None = None
         self._paused = False
+        self._holding_awake = False
 
     @property
     def seconds(self) -> float:
@@ -113,6 +116,9 @@ class Recorder:
             callback=self._callback,
         )
         self._stream.start()
+        # a laptop that falls asleep would cut the recording short
+        keep_awake.hold()
+        self._holding_awake = True
 
     def pause(self, paused: bool = True) -> None:
         self._paused = paused
@@ -125,6 +131,9 @@ class Recorder:
                 stream.stop()
             finally:
                 stream.close()
+        if self._holding_awake:
+            self._holding_awake = False
+            keep_awake.release()
         self._queue.put(None)
         if self._writer is not None:
             self._writer.join(timeout=10)

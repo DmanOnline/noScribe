@@ -57,7 +57,7 @@ from faster_whisper.vad import VadOptions, get_speech_timestamps
 from i18n import t
 from PIL import Image
 
-from . import audio, branding, exception, pdf_export, transcription, utils
+from . import audio, branding, exception, keep_awake, pdf_export, transcription, utils
 from .CTkToolTips import CTkToolTip
 from .inference import (
     DiarizationRequest,
@@ -3076,6 +3076,14 @@ class App(ctk.CTk):
         return ', '.join(f'{name} = SPEAKER_{label[1:]}' for label, name in job.speaker_name_map.items())
 
     def transcription_worker(self, start_job_index=None):
+        """Process transcription jobs from the queue, keeping the computer awake."""
+        keep_awake.hold()
+        try:
+            self._transcription_worker(start_job_index)
+        finally:
+            keep_awake.release()
+
+    def _transcription_worker(self, start_job_index=None):
         """Process transcription jobs from the queue"""
         queue_start_time = datetime.datetime.now()
         queue_jobs_processed = 0
