@@ -102,6 +102,8 @@ jobs:
         run: |
           $base = "dist/noScribe/_internal"
           foreach ($f in @(
+              "../noScribe.exe",
+              "../noScribe-cli.exe",
               "models/fast/model.bin",
               "noScribe/plugins/local_canary/backend.json",
               "noScribe/plugins/local_whisper/backend.json",
@@ -111,16 +113,34 @@ jobs:
           "{0:N0} MB" -f ((Get-ChildItem -Recurse dist/noScribe | Measure-Object Length -Sum).Sum / 1MB)
 
       - name: Smoke test, list models
-        run: dist\noScribe\noScribe.exe --help-models
+        run: dist\noScribe\noScribe-cli.exe --help-models
 
       - name: Smoke test, Whisper fast to PDF (20 s, with speaker detection)
         shell: pwsh
         run: |
-          dist\noScribe\noScribe.exe --no-gui --model local-whisper:fast --language de --speaker-detection auto --stop 00:00:20 tests\data\interview.mp3 smoke_whisper.pdf
+          dist\noScribe\noScribe-cli.exe --no-gui --model local-whisper:fast --language de --speaker-detection auto --stop 00:00:20 tests\data\interview.mp3 smoke_whisper.pdf
           if (-not (Test-Path smoke_whisper.pdf)) { throw "No PDF written" }
 
       # The installer: one setup.exe, installs per user (no admin rights needed),
       # with Start menu and desktop shortcuts.
+      # The app as a user starts it: noScribe.exe has no console, so it must
+      # open its own window. Fails if no "noScribe" window appears in 3 min.
+      - name: Smoke test, app window opens
+        shell: pwsh
+        run: |
+          $p = Start-Process dist\noScribe\noScribe.exe -PassThru
+          $deadline = (Get-Date).AddMinutes(3)
+          $title = ""
+          while ((Get-Date) -lt $deadline -and -not $title) {
+            Start-Sleep -Seconds 3
+            $title = (Get-Process -Name noScribe -ErrorAction SilentlyContinue |
+                      Where-Object { $_.MainWindowTitle -like "noScribe*" } |
+                      Select-Object -First 1).MainWindowTitle
+          }
+          Get-Process -Name noScribe -ErrorAction SilentlyContinue | Stop-Process -Force
+          if (-not $title) { throw "The noScribe window did not appear within 3 minutes" }
+          "Window opened: $title"
+
       - name: Install NSIS
         shell: pwsh
         run: |

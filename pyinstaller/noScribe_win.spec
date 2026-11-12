@@ -131,9 +131,16 @@ noScribe_splash = Splash(
     text_color='#CDDCF0',
     text_default='noScribe wordt gestart...',
     minify_script=True,
-    always_on_top=False,
+    # on top, so the start screen is never hidden behind another window
+    always_on_top=True,
 )
 
+# Two programs share one folder:
+# - noScribe.exe: the app, without any console window (console=False). On
+#   Windows 11 a console program opens in Windows Terminal, which
+#   hide_console cannot hide, so a console build always showed a black window.
+# - noScribe-cli.exe: the same program as a console program, for the command
+#   line (--no-gui, --help-models) and the automated tests. No start screen.
 noScribe_exe = EXE(
     noScribe_pyz,
     noScribe_a.scripts,
@@ -145,9 +152,26 @@ noScribe_exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    # console=False,
-    # hide the empty console right away; the splash screen shows the progress
-    hide_console="hide-early",
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon=['../img/noScribeLogo.ico'],
+)
+
+noScribe_cli_exe = EXE(
+    noScribe_pyz,
+    noScribe_a.scripts,
+    [],
+    exclude_binaries=True,
+    name='noScribe-cli',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -159,6 +183,7 @@ noScribe_exe = EXE(
 # assemble the dist folder with all needed DLLs, datas, etc.
 noScribe_coll = COLLECT(
     noScribe_exe,
+    noScribe_cli_exe,
     noScribe_a.binaries,
     noScribe_a.zipfiles,
     noScribe_a.datas,

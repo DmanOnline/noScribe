@@ -95,7 +95,7 @@ jobs:
             $m = $m.Trim()
             $name = $m.Split(":")[1]
             $out = "speedtest/$name.txt"
-            $t = Measure-Command { app/noScribe.exe --no-gui --model $m --language nl --speaker-detection auto speedtest/speedtest_nl.wav $out | Out-Host }
+            $t = Measure-Command { app/noScribe-cli.exe --no-gui --model $m --language nl --speaker-detection auto speedtest/speedtest_nl.wav $out | Out-Host }
             $wer = if (Test-Path $out) { python tools/speedtest.py score --ref speedtest/reference.txt --hyp $out } else { "failed" }
             $perHour = [math]::Round($t.TotalMinutes / $audioMin * 60, 0)
             "| $name | $([math]::Round($t.TotalMinutes, 1)) min | ~$perHour min | $wer% |" >> $env:GITHUB_STEP_SUMMARY

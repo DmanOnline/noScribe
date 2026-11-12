@@ -108,6 +108,7 @@ Section Uninstall
   RMDir /r "$SMPROGRAMS\noScribe"
   RMDir /r "$INSTDIR\_internal"
   Delete "$INSTDIR\${MAIN_APP_EXE}"
+  Delete "$INSTDIR\noScribe-cli.exe"
   Delete "$INSTDIR\uninstall.exe"
   RMDir "$INSTDIR"
   DeleteRegKey ${REG_ROOT} "${REG_APP_PATH}"
