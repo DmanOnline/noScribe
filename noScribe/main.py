@@ -208,6 +208,11 @@ languages = {
     "Welsh": "cy",
 }
 
+# Default interface language of this edition, and the config flag that
+# records that it was applied once (see noScribeMain).
+DEFAULT_LOCALE = "nl"
+DUTCH_DEFAULT_APPLIED = "ma_dutch_default_applied"
+
 suppported_locales = ["de", "en", "es", "fr", "it", "ja", "nl", "pt", "ru", "zh"]
 
 # config
@@ -4417,6 +4422,15 @@ def noScribeMain():
     """
     Main entry point for the noScribe app.
     """
+
+    # This edition is Dutch by default. It shares its settings folder with the
+    # original noScribe, which may already have stored "en" (from an English
+    # Windows). On the first start of this edition, switch to Dutch once; a
+    # later change of "locale" in config.yml is respected.
+    if not config.get(DUTCH_DEFAULT_APPLIED):
+        config["locale"] = DEFAULT_LOCALE
+        config[DUTCH_DEFAULT_APPLIED] = True
+        save_config()
 
     # Get desired locale from the user as defined in the config file or use
     # the system locale.
