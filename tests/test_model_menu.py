@@ -106,9 +106,10 @@ def test_opening_menu_retries_server_that_was_offline_at_startup(app, monkeypatc
     assert app.option_menu_whisper_model.get() == "fast"
 
 
-def test_missing_last_used_model_prefers_local_precise(app):
-    assert main._model_selection_label(app, "server:unavailable") == "precise"
-    assert main._model_selection_label(app, "local-whisper:fast") == "fast"
+def test_missing_last_used_model_prefers_local_fast(app):
+    # This fork prefers "fast": on CPU-only laptops it is the bundled model.
+    assert main._model_selection_label(app, "server:unavailable") == "fast"
+    assert main._model_selection_label(app, "local-whisper:precise") == "precise"
 
 
 def test_server_shutdown_removes_models_and_restart_restores_them(app, monkeypatch):
@@ -138,7 +139,7 @@ def test_server_shutdown_removes_models_and_restart_restores_them(app, monkeypat
         assert "remote-model (Server)" not in app.option_menu_whisper_model.values
         assert "remote-model (Other server)" in app.option_menu_whisper_model.values
         assert "fast" in app.option_menu_whisper_model.values
-        assert app.option_menu_whisper_model.get() == "precise"
+        assert app.option_menu_whisper_model.get() == "fast"
         assert "server:remote-model" not in app.transcription_models
         assert not plugin.supports_workflows
         assert plugin.manifest.capabilities == frozenset()
@@ -153,20 +154,20 @@ def test_server_shutdown_removes_models_and_restart_restores_them(app, monkeypat
         assert plugin.supports_workflows
         assert plugin.manifest.capabilities == frozenset({"transcription"})
         assert app.remote_backend_registration_errors == ()
-        assert app.option_menu_whisper_model.get() == "precise"
+        assert app.option_menu_whisper_model.get() == "fast"
     finally:
         for profile in app.remote_backend_profiles:
             app.inference_backend.get(profile.id).close()
 
 
-def test_refresh_uses_precise_if_selected_model_disappears(app):
+def test_refresh_uses_fast_if_selected_model_disappears(app):
     unavailable = _model("server", "remote-model")
     app.transcription_model_options["remote-model (Server)"] = unavailable
     app.transcription_model_labels[str(unavailable.ref)] = "remote-model (Server)"
     app.option_menu_whisper_model.set("remote-model (Server)")
     main._prepare_model_menu(app, app.option_menu_whisper_model)
     _finish_refresh(app)
-    assert app.option_menu_whisper_model.get() == "precise"
+    assert app.option_menu_whisper_model.get() == "fast"
 
 
 def test_refresh_preserves_selection_changed_while_request_was_running(app):
