@@ -132,6 +132,14 @@ jobs:
 
       # The installer: one setup.exe, installs per user (no admin rights needed),
       # with Start menu and desktop shortcuts.
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue) -and
+              -not (Test-Path "${env:ProgramFiles(x86)}\NSIS\makensis.exe")) {
+            choco install nsis -y --no-progress
+          }
+
       - name: Build installer
         shell: pwsh
         run: python tools/make_installer.py --dist dist/noScribe --out installer
