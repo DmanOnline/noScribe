@@ -8,6 +8,11 @@ name: windows-speedtest
 # is ten minutes of Dutch speech (FLEURS, several speakers, known text); speaker
 # detection is on, as a user would run it. Results appear in the run summary.
 on:
+  # A tag starts it too, e.g.  git tag speedtest-1 && git push origin speedtest-1
+  # (needed as long as this workflow is not on the default branch).
+  push:
+    tags:
+      - "speedtest*"
   workflow_dispatch:
     inputs:
       build_run_id:
@@ -84,7 +89,9 @@ jobs:
           "" >> $env:GITHUB_STEP_SUMMARY
           "| Model | Time | Per hour of audio | Word errors |" >> $env:GITHUB_STEP_SUMMARY
           "|---|---|---|---|" >> $env:GITHUB_STEP_SUMMARY
-          foreach ($m in "${{ inputs.models }}".Split(",")) {
+          $models = "${{ inputs.models }}"
+          if (-not $models) { $models = "local-canary:canary-1b-v2,local-whisper:fast" }
+          foreach ($m in $models.Split(",")) {
             $m = $m.Trim()
             $name = $m.Split(":")[1]
             $out = "speedtest/$name.txt"
