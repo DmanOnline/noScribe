@@ -130,8 +130,22 @@ jobs:
           if (-not (Test-Path smoke_whisper.txt)) { throw "No transcript written" }
           Get-Content smoke_whisper.txt
 
+      # The installer: one setup.exe, installs per user (no admin rights needed),
+      # with Start menu and desktop shortcuts.
+      - name: Build installer
+        shell: pwsh
+        run: python tools/make_installer.py --dist dist/noScribe --out installer
+
       # Only a build that passed the tests is uploaded.
-      - name: Upload app
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: noScribe-setup
+          path: installer/*.exe
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload app folder (without installer)
         uses: actions/upload-artifact@v4
         with:
           name: noScribe-windows-cpu

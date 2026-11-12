@@ -1,0 +1,114 @@
+############################################################################
+#  noScribe installer (Windows, CPU build with bundled models)
+#  Based on nsis_template.txt. Differences:
+#  - installs per user in %LOCALAPPDATA%\Programs\noScribe, so no
+#    administrator rights are needed (company laptops)
+#  - Dutch and English installer pages
+#  - Start menu and desktop shortcuts
+#  - LZMA compression (NSIS cannot write installers larger than 2 GB)
+#  Placeholders #*...*# are filled in by tools/make_installer.py.
+############################################################################
+
+Unicode true
+!define APP_NAME "noScribe"
+!define COMP_NAME "noScribe"
+!define WEB_SITE "https://github.com/DmanOnline/noScribe"
+!define VERSION "#*version*#"
+!define COPYRIGHT "noScribe contributors (c) #*year*#"
+!define DESCRIPTION "noScribe - audio omzetten naar tekst met AI"
+!define LICENSE_TXT "#*license*#"
+!define INSTALLER_NAME "#*installer_name*#"
+!define SOURCE_DIR "#*source_dir*#"
+!define MAIN_APP_EXE "noScribe.exe"
+!define REG_ROOT "HKCU"
+!define REG_APP_PATH "Software\Microsoft\Windows\CurrentVersion\App Paths\${MAIN_APP_EXE}"
+!define UNINSTALL_PATH "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
+
+VIProductVersion  "${VERSION}"
+VIAddVersionKey "ProductName"  "${APP_NAME}"
+VIAddVersionKey "CompanyName"  "${COMP_NAME}"
+VIAddVersionKey "LegalCopyright"  "${COPYRIGHT}"
+VIAddVersionKey "FileDescription"  "${DESCRIPTION}"
+VIAddVersionKey "FileVersion"  "${VERSION}"
+
+SetCompressor /SOLID lzma
+Name "${APP_NAME}"
+Caption "${APP_NAME} installeren"
+OutFile "${INSTALLER_NAME}"
+BrandingText "${APP_NAME}"
+RequestExecutionLevel user
+InstallDir "$LOCALAPPDATA\Programs\noScribe"
+InstallDirRegKey "${REG_ROOT}" "${UNINSTALL_PATH}" "InstallLocation"
+
+!include "MUI2.nsh"
+!include "LogicLib.nsh"
+
+!define MUI_ICON "#*icon*#"
+!define MUI_UNICON "#*icon*#"
+!define MUI_ABORTWARNING
+!define MUI_UNABORTWARNING
+
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "${LICENSE_TXT}"
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!define MUI_FINISHPAGE_RUN "$INSTDIR\${MAIN_APP_EXE}"
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+
+!insertmacro MUI_LANGUAGE "Dutch"
+!insertmacro MUI_LANGUAGE "English"
+
+Function .onInit
+  !insertmacro MUI_LANGDLL_DISPLAY
+FunctionEnd
+
+Section -MainProgram
+  ; Replace an earlier version completely, so files of different builds
+  ; never mix.
+  ReadRegStr $0 ${REG_ROOT} "${UNINSTALL_PATH}" "UninstallString"
+  ${If} $0 != ""
+    GetFullPathName $1 "$0\.."
+    ExecWait '"$0" /S _?=$1'
+  ${EndIf}
+  RMDir /r "$INSTDIR\_internal"
+
+  SetOutPath "$INSTDIR"
+  File /r "${SOURCE_DIR}\*.*"
+SectionEnd
+
+Section -Icons_Reg
+  SetOutPath "$INSTDIR"
+  WriteUninstaller "$INSTDIR\uninstall.exe"
+
+  CreateDirectory "$SMPROGRAMS\noScribe"
+  CreateShortCut "$SMPROGRAMS\noScribe\noScribe.lnk" "$INSTDIR\${MAIN_APP_EXE}"
+  CreateShortCut "$SMPROGRAMS\noScribe\noScribe verwijderen.lnk" "$INSTDIR\uninstall.exe"
+  IfFileExists "$INSTDIR\_internal\noScribeEdit\noScribeEdit.exe" 0 +2
+    CreateShortCut "$SMPROGRAMS\noScribe\noScribe Editor.lnk" "$INSTDIR\_internal\noScribeEdit\noScribeEdit.exe"
+  CreateShortCut "$DESKTOP\noScribe.lnk" "$INSTDIR\${MAIN_APP_EXE}"
+
+  WriteRegStr ${REG_ROOT} "${REG_APP_PATH}" "" "$INSTDIR\${MAIN_APP_EXE}"
+  WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "DisplayName" "${APP_NAME}"
+  WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "UninstallString" "$INSTDIR\uninstall.exe"
+  WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "InstallLocation" "$INSTDIR"
+  WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "DisplayIcon" "$INSTDIR\${MAIN_APP_EXE}"
+  WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "DisplayVersion" "${VERSION}"
+  WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "Publisher" "${COMP_NAME}"
+  WriteRegStr ${REG_ROOT} "${UNINSTALL_PATH}" "URLInfoAbout" "${WEB_SITE}"
+  WriteRegDWORD ${REG_ROOT} "${UNINSTALL_PATH}" "NoModify" 1
+  WriteRegDWORD ${REG_ROOT} "${UNINSTALL_PATH}" "NoRepair" 1
+SectionEnd
+
+Section Uninstall
+  Delete "$DESKTOP\noScribe.lnk"
+  RMDir /r "$SMPROGRAMS\noScribe"
+  RMDir /r "$INSTDIR\_internal"
+  Delete "$INSTDIR\${MAIN_APP_EXE}"
+  Delete "$INSTDIR\uninstall.exe"
+  RMDir "$INSTDIR"
+  DeleteRegKey ${REG_ROOT} "${REG_APP_PATH}"
+  DeleteRegKey ${REG_ROOT} "${UNINSTALL_PATH}"
+SectionEnd

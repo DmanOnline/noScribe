@@ -120,6 +120,11 @@ def pyannote_proc_entrypoint(args: dict, q):
         # duration and speaker-count settings. Keep noScribe processing local,
         # even if the parent environment enables telemetry for other apps.
         os.environ["PYANNOTE_METRICS_ENABLED"] = "0"
+        # The pipeline and its models are local (the bundled pyannote folder).
+        # Never wait on the Hugging Face Hub: behind a company firewall or
+        # without internet a version check can stall the start for minutes.
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
+        os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
         from pyannote.audio import Pipeline
 
         def plog(level, msg):
