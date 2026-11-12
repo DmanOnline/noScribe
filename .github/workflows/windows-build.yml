@@ -2,11 +2,15 @@ name: windows-build
 
 # Builds the Windows CPU version with the models bundled (Canary 1B v2 and
 # Whisper "fast"), as a folder you unzip and run. No NVIDIA GPU needed.
+#
+# Not on every push, because a build takes 30 to 60 minutes. Start it by hand
+# (Actions > windows-build > Run workflow) or push a version tag, e.g.
+#   git tag v0.8-ma1 && git push origin v0.8-ma1
 on:
   workflow_dispatch:
   push:
-    branches:
-      - feature/record-pdf-canary
+    tags:
+      - "v*"
 
 permissions:
   contents: read
