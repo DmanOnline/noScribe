@@ -68,6 +68,39 @@ def _resample_to_16k(waveform, sample_rate):
     return np.interp(positions, np.arange(len(waveform)), waveform).astype(np.float32)
 
 
+
+def diarization_turns(segments, *, max_gap_s: float = 0.8, min_len_s: float = 0.25):
+    """Turn diarization segments (ms, label) into speaker turns in seconds.
+
+    Consecutive segments of the same speaker with a short gap are merged, so a
+    turn is one stretch of speech by one person. Overlapping segments are
+    clipped so no audio is transcribed twice. Returns [(start_s, end_s, label)].
+    """
+    items = sorted(
+        (float(seg["start"]) / 1000.0, float(seg["end"]) / 1000.0, str(seg.get("label", "")))
+        for seg in segments or []
+        if float(seg["end"]) > float(seg["start"])
+    )
+    turns: list[list] = []
+    for start, end, label in items:
+        if turns:
+            prev = turns[-1]
+            if label == prev[2] and start - prev[1] <= max_gap_s:
+                prev[1] = max(prev[1], end)
+                continue
+            if end <= prev[1]:
+                continue  # fully inside the previous turn (overlapping speech)
+            start = max(start, prev[1])
+        turns.append([start, end, label])
+    return [(s, e, l) for s, e, l in turns if e - s >= min_len_s]
+
+
+class _Segment:
+    __slots__ = ("start", "end", "text")
+
+    def __init__(self, start, end, text):
+        self.start, self.end, self.text = start, end, text
+
 def canary_proc_entrypoint(args: dict, q):
     """Run Canary in a child process and stream events to the parent via ``q``.
 
@@ -140,15 +173,41 @@ def canary_proc_entrypoint(args: dict, q):
 
         q.put({"type": "status", "level": "info", "message_id": "start_transcription", "params": {}})
         state.update("transcription")
-        if len(waveform):
-            segments = model.recognize(
-                np.ascontiguousarray(waveform, dtype=np.float32),
-                sample_rate=sample_rate,
-                language=language,
-                pnc=True,
-            )
-        else:
+        waveform = np.ascontiguousarray(waveform, dtype=np.float32)
+        max_segment_s = float(args.get("max_segment_seconds", 20.0))
+        diarization = args.get("diarization") or {}
+        turns = diarization_turns(diarization.get("segments"))
+
+        def by_speaker_turns():
+            """Transcribe each speaker turn on its own, so a segment never
+            mixes two speakers (Canary has no word timestamps to split on)."""
+            pad = 0.15
+            for turn_start, turn_end, _label in turns:
+                a = max(0, int((turn_start - pad) * sample_rate))
+                b = min(len(waveform), int((turn_end + pad) * sample_rate))
+                if b <= a:
+                    continue
+                piece = waveform[a:b]
+                if turn_end - turn_start <= max_segment_s:
+                    text = asr.recognize(piece, sample_rate=sample_rate,
+                                         language=language, pnc=True)
+                    yield _Segment(turn_start, turn_end, text)
+                else:
+                    # long monologue: cut it at pauses, as without diarization
+                    offset = a / sample_rate
+                    for seg in model.recognize(piece, sample_rate=sample_rate,
+                                               language=language, pnc=True):
+                        yield _Segment(max(turn_start, offset + float(seg.start)),
+                                       min(turn_end, offset + float(seg.end)), seg.text)
+
+        if not len(waveform):
             segments = ()
+        elif turns:
+            log("info", f"Canary: transcribing {len(turns)} speaker turns")
+            segments = by_speaker_turns()
+        else:
+            segments = model.recognize(waveform, sample_rate=sample_rate,
+                                       language=language, pnc=True)
         for segment in segments:
             text = (segment.text or "").strip()
             start = float(segment.start)

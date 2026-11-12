@@ -128,6 +128,8 @@ class LocalCanaryPlugin:
             "max_segment_seconds": self.settings.max_segment_seconds,
             "min_silence_ms": self.settings.min_silence_ms,
             "extensions": request.extensions,
+            # speaker turns from Pyannote; the worker transcribes per turn
+            "diarization": request.diarization.to_mapping() if request.diarization is not None else None,
         }
 
         runner = self._runner

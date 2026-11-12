@@ -481,3 +481,19 @@ def test_discovery_accepts_importlib_traversable(tmp_path):
     (tmp_path / "b").mkdir()
     found = discover_canary_models(MultiplexedPath(tmp_path / "a", tmp_path / "b"))
     assert found == {"canary-1b-v2": str(first.absolute())}
+
+
+def test_diarization_turns_merge_clip_and_drop():
+    from noScribe.canary_mp_worker import diarization_turns
+
+    segments = [
+        {"start": 0, "end": 3000, "label": "A"},
+        {"start": 3200, "end": 5000, "label": "A"},   # short gap: same turn
+        {"start": 4800, "end": 7000, "label": "B"},   # overlap: clipped to 5.0
+        {"start": 5000, "end": 6000, "label": "A"},   # inside B's turn: dropped
+        {"start": 7100, "end": 7200, "label": "A"},   # too short: dropped
+        {"start": 9000, "end": 11000, "label": "A"},
+    ]
+    assert diarization_turns(segments) == [(0.0, 5.0, "A"), (5.0, 7.0, "B"), (9.0, 11.0, "A")]
+    assert diarization_turns(None) == []
+    assert diarization_turns([]) == []
