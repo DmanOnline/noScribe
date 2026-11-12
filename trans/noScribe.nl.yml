@@ -1,0 +1,218 @@
+nl:
+  app_header: Audio omzetten naar tekst met AI
+  welcome_message: Hallo, noScribe is klaar voor gebruik!
+  welcome_credits: >
+
+    Versie %{v}, Kai Dröge %{y}
+
+    macOS-versie door Philipp Schneider
+
+    gebouwd op Whisper (OpenAI), faster-whisper (Guillaume Klein) & pyannote (Hervé Bredin)
+  welcome_instructions: >
+
+    Kies links een audiobestand, of neem direct op met de microfoonknop, en kies waar het transcript wordt opgeslagen.
+    Heb wat geduld: het omzetten kan 2 tot 5 keer zo lang duren als de opname zelf. Test je instellingen eerst
+    op een kort stuk voordat je de hele opname omzet. (Start = 00.00.00 en Stop = 00.03.00 zet
+    de eerste 3 minuten om.)
+
+
+    Veel succes!
+
+  setup_message: 'Eerste keer opstarten: de installatie wordt afgerond...'
+  new_release: 'Er is een nieuwe versie van noScribe beschikbaar (%{v}):'
+  new_release_download: 'Downloaden: '
+
+  # UI Elements
+  tab_log: Logboek
+  tab_queue: Wachtrij
+
+  label_audio_file: 'Audiobestand:'
+  label_audio_file_name: <kies een bestand>
+  multiple_audio_files: '(meerdere bestanden gekozen)'
+
+  label_transcript_file: 'Transcript opslaan als:'
+  label_transcript_file_name: <kies een bestandsnaam>
+  output_dir_selection: 'Meerdere audiobestanden: kies een map waarin de transcripten worden opgeslagen. De namen worden automatisch gemaakt.'
+  output_format_selection: 'Meerdere audiobestanden: kies het bestandsformaat voor alle transcripten.'
+
+  label_start: 'Start (uu:mm:ss):'
+  label_stop: 'Stop (uu:mm:ss):'
+
+  label_language: 'Taal:'
+  label_speaker: 'Sprekers herkennen:'
+  label_speaker_names: 'Namen:'
+  tooltip_speaker_names: |-
+    Namen van de mensen in de opname, gescheiden door komma's (bijv. "Mona, Lena").
+    Ze worden gekoppeld aan de sprekers in de volgorde waarin die voor het eerst praten,
+    en vervangen de labels S00/S01 in het transcript.
+  ask_speaker_names_count: 'Je hebt %{n_names} naam/namen ingevuld, maar het aantal sprekers staat op %{n_speakers}. De namen kunnen bij de verkeerde personen terechtkomen. Toch starten?'
+  warn_speaker_names_more_speakers: 'Er zijn meer sprekers herkend dan er namen zijn ingevuld (%{n_names}). De extra sprekers krijgen een nummer, doorlopend na de genoemde sprekers in de volgorde waarin ze praten.'
+  label_whisper_model: 'Model:'
+  label_add_custom_models: 'AI-model toevoegen...'
+  label_manage_servers: 'Server toevoegen of beheren...'
+  server_manager_title: 'Transcriptieservers beheren'
+  server_manager_profiles: 'Serverprofielen'
+  server_manager_name: 'Naam:'
+  server_manager_url: 'Server-URL:'
+  server_manager_api_key: 'API-sleutel:'
+  server_manager_enabled: 'Ingeschakeld'
+  server_manager_disabled_suffix: ' (uitgeschakeld)'
+  server_manager_delete: 'Verwijderen'
+  server_manager_close: 'Sluiten'
+  server_manager_test: 'Verbinding testen'
+  server_manager_testing: 'Verbinding wordt getest...'
+  server_manager_test_ok: 'Verbinding gelukt. %{count} model(len) beschikbaar.'
+  server_manager_test_failed: 'Verbinding mislukt: %{error}'
+  server_manager_saved: 'Serverprofiel opgeslagen.'
+  server_manager_deleted: 'Serverprofiel verwijderd.'
+  server_manager_delete_confirm: 'Het serverprofiel "%{name}" verwijderen?'
+  server_manager_busy: 'Serverprofielen kunnen niet worden gewijzigd zolang er een transcriptie loopt.'
+  label_overlapping: 'Door elkaar praten:'
+  label_pause: 'Pauzes markeren:'
+  label_timestamps: 'Tijdstempels:'
+  label_disfluencies: 'Stopwoordjes:'
+  opt_yes: 'Ja'
+  opt_no: 'Nee'
+
+  start_button: Start
+  start_queue: 'Taak nu starten'
+  send_queue: 'Taak in de wachtrij zetten'
+  stop_button: Annuleren
+  queue_run_button: 'Uitvoeren'
+  editor_button: Editor
+
+  overall_progress: 'Totale voortgang: '
+
+  # job status
+  waiting: 'wacht'
+  audio_conversion: 'audio omzetten'
+  waiting_for_server: 'wacht op de server'
+  speaker_identification: 'sprekers herkennen'
+  transcription: 'transcriptie'
+  canceling: 'wordt geannuleerd'
+  canceled: 'geannuleerd'
+  finished: 'klaar'
+  error: 'fout'
+
+  # job queue tooltips
+  job_tt_waiting: 'Taak wacht...'
+  job_tt_running: 'Taak loopt. Zie het tabblad Logboek voor details.'
+  job_tt_finished: 'Klaar. Klik rechts op "✔" om het resultaat te zien.'
+  job_tt_canceling: 'Bezig met annuleren...'
+  job_tt_canceled: 'De taak is door de gebruiker geannuleerd.'
+  job_tt_error: 'Er ging iets mis bij het verwerken van de taak: %{error_msg}'
+  job_tt_transcript_file: 'Transcript:'
+
+
+  # log messages
+  log_transcript_filename: 'Bestandsnaam transcript(en): '
+  log_audio_file_selected: 'Gekozen audiobestand(en): '
+  queue_added_job: 'Taak "%{audio_file}" is aan de wachtrij toegevoegd.'
+  queue_start: === Wachtrij gestart ===
+  queue_start_jobs: Bezig met %{total} transcriptietaak/-taken
+  queue_none_waiting: 'Niets te doen, er wachten geen taken in de wachtrij.'
+  start_job: 'Taak gestart: %{audio_file}'
+  start_audio_conversion: 'Audio omzetten...'
+  audio_conversion_finished: 'Audio omgezet'
+  audio_conversion_skipped_invalid_packets: '%{count} ongeldige audiopakketten zijn overgeslagen.'
+  start_identifying_speakers: 'Sprekers herkennen...'
+  loading_pyannote: 'pyannote laden'
+  streaming_audio: 'Audio naar de server sturen...'
+  start_canceling: 'Annuleren... (even geduld)'
+  start_transcription: 'Transcriberen...'
+  loading_whisper: 'Spraakmodel laden'
+  pyannote_cuda_retry: |-
+    CUDA-fout bij pyannote. Nieuwe poging op de CPU. Dit geldt alleen voor deze taak.
+    Zet force_pyannote_cpu: true in config.yml om altijd de CPU te gebruiken.
+  whisper_cuda_retry: |-
+    CUDA-fout bij Whisper. Nieuwe poging op de CPU. Dit geldt alleen voor deze taak.
+    Zet force_whisper_cpu: true in config.yml om altijd de CPU te gebruiken.
+  gpu_worker_crash_retry: |-
+    Het %{component}-proces op de GPU is onverwacht gestopt (exitcode %{exitcode}, laatste stap: %{stage}). De oorzaak is onbekend. Deze taak wordt opnieuw geprobeerd op de CPU.
+    Zet %{option}: true in config.yml om altijd de CPU te gebruiken.
+  vad: 'Spraak in de opname zoeken...'
+  language_detect: 'Taal "%{lang}" herkend met waarschijnlijkheid %{prob}'
+  server_queue_wait: 'Wacht op de server (positie %{position})'
+  language_en_only: 'Let op: het gekozen AI-model kan alleen Engels.'
+
+  transcription_finished: 'Transcriptie klaar.'
+  transcription_saved: 'Opgeslagen in: %{file}'
+  trancription_time: 'Duur: %{duration} minuten'
+
+  queue_complete: '=== Wachtrij afgerond ==='
+  total_jobs: 'Taken totaal: %{total}'
+  completed: 'Klaar: %{finished}'
+  failed: 'Mislukt: %{errors}'
+  canceled_summary: 'Geannuleerd: %{canceled}'
+  processing_time: 'Totale verwerkingstijd: %{total_time_str}'
+
+  # Error messages
+  output_override: >
+    Een andere taak in de wachtrij (wachtend, bezig of klaar) gebruikt hetzelfde uitvoerbestand.
+    Wil je het uitvoerbestand overschrijven?
+  err_setup: 'Er ging iets mis tijdens de installatie. Controleer of je internetverbinding werkt en start het programma opnieuw.'
+  err_invalid_time_string: 'Dit is geen geldige tijd: "%{time}"'
+  err_options: 'Fout in de opties'
+  err_remote_backend_connection: "Kon geen verbinding maken met server '%{name}'."
+  err_remote_backend_refresh: 'Kon de ingestelde servers niet bijwerken.'
+  err_no_audio_file: 'Fout: kies eerst een audiobestand of maak een opname.'
+  err_no_transcript_file: 'Fout: kies een bestandsnaam voor het transcript.'
+  err_unsupported_output_format: 'Fout: bestandsformaat "%{file_type}" wordt niet ondersteund.'
+  err_ffmpeg: 'ffmpeg gaf een fout'
+  err_converting_audio: Fout in stap 1, het omzetten van de audio.
+  err_identifying_speakers: Fout in stap 2, het herkennen van de sprekers.
+  err_loading_prompt: 'Waarschuwing: de Whisper-prompt kon niet worden geladen.'
+  transcription_canceled: 'Weet je zeker dat je de transcriptie wilt annuleren?'
+  queue_cancel_all_confirm: 'Hiermee annuleer je alle onafgemaakte taken in de wachtrij. Doorgaan?'
+  err_user_cancelation: 'Het proces is door de gebruiker geannuleerd.'
+  err_whisper_main: whisper is gestopt met foutcode %{e}
+  err_transcription: 'Fout in stap 3, de transcriptie'
+  err_empty_transcript: 'Er is geen tekst herkend in het gekozen stuk. Controleer de audio en de instellingen.'
+  rescue_saving: 'Opslaan onder de oorspronkelijke bestandsnaam lukte niet. Opgeslagen in dit bestand: %{file}'
+  rescue_saving_failed: 'Fout: opslaan onder de oorspronkelijke bestandsnaam lukte niet, en de andere bestandsnaam bestaat ook al. Het programma moet stoppen. (Controleer of het transcript niet al open staat in Word of een PDF-lezer.)'
+  err_noScribeEdit_not_found: 'Fout: de noScribe Editor is niet gevonden.'
+  err_vtt_invalid_options: 'Waarschuwing: de opties "Door elkaar praten", "Pauzes markeren" en "Tijdstempels" werken niet in VTT-bestanden.'
+  err_editor_invalid_format: 'De editor werkt alleen met html-bestanden. Toch starten?'
+  err_editor_no_file: 'Er is nog geen afgeronde transcriptie. Toch de editor starten?'
+  err_invalid_model: 'Dubbele naam voor een Whisper-model genegeerd: "%{model_name}"'
+  err_partial_not_found: 'Het gedeeltelijke transcript is niet gevonden.'
+  log_open_partial: 'Gedeeltelijk transcript openen: %{file}'
+
+  # Doc contents
+  doc_header: 'Getranscribeerd met noScribe versie %{version}'
+  doc_header_audio: 'Audiobestand: %{file}'
+  pause_minutes: '(%{minutes} minuten pauze)'
+  pause_seconds: '(%{seconds} seconden pauze)'
+
+  # Queue actions
+  queue_remove_waiting: 'Deze taak uit de wachtrij halen?'
+  queue_remove_entry: 'Deze regel uit de lijst verwijderen?'
+  queue_clear_tt: 'Alle taken behalve de lopende uit de lijst halen'
+  queue_clear_confirm: 'Alle taken behalve de lopende uit de lijst halen? De lopende taak gaat gewoon door.'
+  queue_tt_cancel_running: 'Deze taak annuleren'
+  queue_tt_remove_waiting: 'Uit de wachtrij halen'
+  queue_tt_remove_entry: 'Uit de lijst verwijderen'
+  queue_tt_repeat_job: 'Deze taak herhalen'
+  queue_tt_edit_job: 'Het resultaat openen in de noScribe Editor'
+  queue_tt_open_partial_job: 'Het gedeeltelijke resultaat openen in de noScribe Editor'
+
+  # Recording
+  record_tooltip: 'Opnemen met een microfoon'
+  record_title: 'Opname maken'
+  record_device: 'Microfoon:'
+  record_no_device: 'Geen microfoon gevonden.'
+  record_hint: 'Druk op Opnemen om te beginnen. De opname wordt als WAV-bestand bewaard en daarna als audiobestand gekozen.'
+  record_start: 'Opnemen'
+  record_stop: 'Stoppen'
+  record_pause: 'Pauze'
+  record_resume: 'Verder'
+  record_cancel: 'Annuleren'
+  record_running: 'Opname loopt naar "%{file}"...'
+  record_paused: 'Gepauzeerd. Druk op "Verder" om door te gaan met opnemen.'
+  record_empty: 'Er is niets opgenomen.'
+  record_error: 'Opnemen mislukt: %{error}'
+  record_discard: 'Opname stoppen en weggooien?'
+  record_saved: 'Opname bewaard: %{file}'
+  record_file_prefix: 'Opname'
+  record_folder_name: 'Opnames'
+  canary_language_fallback: 'Canary kan de taal niet zelf herkennen (%{reason}). Er wordt getranscribeerd als "%{lang}". Kies zelf de taal voor het beste resultaat.'

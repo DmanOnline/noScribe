@@ -35,6 +35,13 @@ noScribe_datas += [
 ('../README.md', '.')]
 noScribe_datas += collect_data_files('customtkinter')
 noScribe_datas += collect_data_files('noScribe.plugins', includes=['**/backend.json'])
+# Canary plugin (onnx-asr): its preprocessors/resamplers are packaged .onnx/.npz
+# data; the worker module is imported lazily from the plugin.
+noScribe_datas += collect_data_files('onnx_asr')
+noScribe_hiddenimports += ['noScribe.canary_mp_worker'] + collect_submodules('onnx_asr')
+# Optional model folder; the catalogue only lists it when the ONNX files are present.
+if os.path.isdir(os.path.join(SPECPATH, '..', 'models', 'canary-1b-v2')):
+    noScribe_datas.append(('../models/canary-1b-v2/', './models/canary-1b-v2/'))
 noScribe_datas += copy_metadata('AdvancedHTMLParser')
 noScribe_datas += collect_data_files('faster_whisper')
 

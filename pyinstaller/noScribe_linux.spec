@@ -1,8 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
+import os
 import sys
 
 from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.utils.hooks import collect_all
 
 sys.path.insert(0, SPECPATH)
@@ -15,6 +17,13 @@ binaries = []
 hiddenimports = ['PIL._tkinter_finder', 'noScribe.main']
 datas += collect_data_files('faster_whisper')
 datas += collect_data_files('noScribe.plugins', includes=['**/backend.json'])
+# Canary plugin (onnx-asr): its preprocessors/resamplers are packaged .onnx/.npz
+# data; the worker module is imported lazily from the plugin.
+datas += collect_data_files('onnx_asr')
+hiddenimports += ['noScribe.canary_mp_worker'] + collect_submodules('onnx_asr')
+# Optional model folder; the catalogue only lists it when the ONNX files are present.
+if os.path.isdir(os.path.join(SPECPATH, '..', 'models', 'canary-1b-v2')):
+    datas.append(('../models/canary-1b-v2/', 'models/canary-1b-v2/'))
 datas += collect_data_files('lightning_fabric')
 tmp_ret = collect_all('pyannote')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]

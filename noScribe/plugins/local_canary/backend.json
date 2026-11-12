@@ -1,0 +1,14 @@
+{
+  "id": "local-canary",
+  "name": "Local Canary",
+  "version": "1.0.0",
+  "protocol_version": 1,
+  "engine": "canary",
+  "execution": {
+    "type": "builtin",
+    "adapter": "local-canary"
+  },
+  "capabilities": [
+    "transcription"
+  ]
+}

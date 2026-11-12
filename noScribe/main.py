@@ -57,7 +57,7 @@ from faster_whisper.vad import VadOptions, get_speech_timestamps
 from i18n import t
 from PIL import Image
 
-from . import audio, exception, transcription, utils
+from . import audio, branding, exception, pdf_export, transcription, utils
 from .CTkToolTips import CTkToolTip
 from .inference import (
     DiarizationRequest,
@@ -77,6 +77,7 @@ from .plugins.factory import (
     register_remote_profiles,
     sync_remote_profiles,
 )
+from .plugins.local_canary import discover_canary_models
 from .plugins.manifest import ExecutionType
 from .plugins.remote_http import NOSCRIBE_HTTP_DRIVER, RemoteHttpPlugin
 from .plugins.remote_profiles import (
@@ -88,6 +89,7 @@ from .plugins.remote_profiles import (
     save_remote_profile,
 )
 from .tkHyperlinkManager import HyperlinkManager
+from .record_dialog import RecordDialog
 from .worker_errors import WorkerError, WorkerRetryError
 
 if platform.system() == "Darwin": # = MAC
@@ -121,6 +123,7 @@ REMOTE_MODEL_REFRESH_SECONDS = 15.0
 
 ctk.set_appearance_mode('dark')
 ctk.set_default_color_theme('blue')
+branding.apply_ctk_theme(ctk)
 
 default_html = """
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">
@@ -204,7 +207,7 @@ languages = {
     "Welsh": "cy",
 }
 
-suppported_locales = ["de", "en", "es", "fr", "it", "ja", "pt", "ru", "zh"]
+suppported_locales = ["de", "en", "es", "fr", "it", "ja", "nl", "pt", "ru", "zh"]
 
 # config
 config_dir = appdirs.user_config_dir('noScribe')
@@ -300,6 +303,7 @@ OUTPUT_FILETYPES = {
     'html': 'noScribe Transcript',
     'txt': 'Text only',
     'vtt': 'WebVTT Subtitles (also for EXMARaLDA)',
+    'pdf': 'PDF',
 }
 
 def save_config():
@@ -490,7 +494,7 @@ def create_transcription_job(audio_file=None, transcript_file=None, start_time=N
     job.audio_file = audio_file or ''
     job.transcript_file = transcript_file or ''
     if job.transcript_file:
-        if job.output_format not in ['html', 'txt', 'vtt']:
+        if job.output_format not in OUTPUT_FILETYPES:
             raise Exception(t('err_unsupported_output_format', file_type=job.output_format))
     
     # Time range
@@ -635,7 +639,7 @@ Examples:
     parser.add_argument('audio_file', nargs='?',
                        help='Input audio file path')
     parser.add_argument('output_file', nargs='?', 
-                       help='Output transcript file path (.html, .txt, or .vtt)')
+                       help='Output transcript file path (.html, .txt, .vtt or .pdf)')
     
     # Optional arguments
     parser.add_argument('--no-gui', action='store_true', default=False,
@@ -899,6 +903,7 @@ def _init_app_state(app):
         },
         settings=app.worker_settings,
         settings_dir=Path(config_dir) / "plugin-settings",
+        canary_models=discover_canary_models(impres.files("models"), app.user_models_dir),
     )
     app.remote_backend_registration_errors = register_remote_profiles(
         app.inference_backend,
@@ -994,8 +999,14 @@ class App(ctk.CTk):
             )
 
         # header
-        self.frame_header = ctk.CTkFrame(self, height=100)
+        self.frame_header = ctk.CTkFrame(self, height=100, corner_radius=0, fg_color=branding.BLUE_DEEP)
         self.frame_header.pack(padx=0, pady=0, anchor='nw', fill='x')
+
+        # thin stripe in the four logo colours below the header
+        self.frame_header_stripe = ctk.CTkFrame(self, height=4, corner_radius=0, fg_color='transparent')
+        self.frame_header_stripe.pack(padx=0, pady=0, fill='x')
+        for colour in branding.LOGO_STRIPE:
+            ctk.CTkFrame(self.frame_header_stripe, height=4, corner_radius=0, fg_color=colour).pack(side='left', expand=True, fill='x')
 
         self.frame_header_logo = ctk.CTkFrame(self.frame_header, fg_color='transparent')
         self.frame_header_logo.pack(anchor='w', side='left')
@@ -1009,7 +1020,7 @@ class App(ctk.CTk):
         self.header_label.pack(padx=20, pady=[0, 20], anchor='w')
         # graphic
         self.header_graphic = ctk.CTkImage(
-            dark_image=Image.open(impres.files("img") / "graphic_sw.png"),
+            dark_image=branding.header_graphic_on(Image.open(impres.files("img") / "graphic_sw.png")),
             size=(926,119)
         )
         self.header_graphic_label = ctk.CTkLabel(self.frame_header, image=self.header_graphic, text='')
@@ -1035,11 +1046,18 @@ class App(ctk.CTk):
         self.frame_audio_file = ctk.CTkFrame(self.scrollable_options, width=260, height=33, corner_radius=8, border_width=2)
         self.frame_audio_file.pack(padx=20, pady=[0,10], anchor='w')
 
-        self.button_audio_file_name = ctk.CTkButton(self.frame_audio_file, width=200, corner_radius=8, bg_color='transparent', 
+        self.button_audio_file_name = ctk.CTkButton(self.frame_audio_file, width=160, corner_radius=8, bg_color='transparent', 
                                                     fg_color='transparent', hover_color=self.frame_audio_file._bg_color, 
                                                     border_width=0, anchor='w',  
                                                     text=t('label_audio_file_name'), command=self.button_audio_file_event)
         self.button_audio_file_name.place(x=3, y=3)
+
+        # record from a microphone instead of choosing a file
+        self.button_record = ctk.CTkButton(self.frame_audio_file, width=40, height=29, text='🎙',
+                                           fg_color=branding.MAGENTA, hover_color=branding.MAGENTA_DARK,
+                                           command=self.button_record_event)
+        self.button_record.place(x=168, y=2)
+        CTkToolTip(self.button_record, text=t('record_tooltip'))
 
         self.button_audio_file = ctk.CTkButton(self.frame_audio_file, width=45, height=29, text='📂', command=self.button_audio_file_event)
         self.button_audio_file.place(x=213, y=2)
@@ -1089,7 +1107,8 @@ class App(ctk.CTk):
 
         self.option_menu_language = ctk.CTkOptionMenu(self.frame_options, width=100, values=list(languages.keys()), dynamic_resizing=False)
         self.option_menu_language.grid(column=1, row=2, sticky='e', pady=5)
-        last_language = get_config('last_language', 'auto')
+        # With the Dutch interface, transcribe Dutch unless the user chose otherwise.
+        last_language = get_config('last_language', 'Dutch' if config.get('locale') == 'nl' else 'auto')
         if last_language in languages.keys():
             self.option_menu_language.set(last_language)
         else:
@@ -1226,9 +1245,9 @@ class App(ctk.CTk):
                 kwargs.setdefault('height', 42)
                 kwargs.setdefault('dynamic_resizing', False)
                 kwargs.setdefault('anchor', 'center')
-                kwargs.setdefault('fg_color', btn_theme.get('fg_color'))
-                kwargs.setdefault('button_color', btn_theme.get('hover_color'))
-                kwargs.setdefault('button_hover_color', btn_theme.get('hover_color'))
+                kwargs.setdefault('fg_color', branding.GREEN)
+                kwargs.setdefault('button_color', branding.GREEN_DARK)
+                kwargs.setdefault('button_hover_color', branding.GREEN_DARK)
 
                 super().__init__(master, values=['Start'], **kwargs)
                 self.noScribe_parent = noScribe_parent
@@ -2740,23 +2759,39 @@ class App(ctk.CTk):
                                            initialfile=initialfile,
                                            multiple=True)
         if fn and len(fn) > 0:
-            if tuple(fn) != tuple(self.audio_files_list):
-                self.entry_speaker_names.delete(0, 'end')
-            self.audio_files_list = fn
-            msg = t('log_audio_file_selected')
-            for f in fn:
-                msg += f'\n{f}'
-            self.logn()
-            self.logn(msg)
-            if len(fn) == 1:
-                self.button_audio_file_name.configure(text=os.path.basename(self.audio_files_list[0]))
-            else:
-                self.button_audio_file_name.configure(text=t('multiple_audio_files'))
-                # A batch never opens the save dialog (which carries the format
-                # list), so ask once for the format of all transcripts here.
-                # Cancelling keeps the format of the previous run.
-                self.set_output_filetype(self.ask_output_format())
-            self.create_default_transcript_names()
+            self.set_audio_files(fn)
+
+    def button_record_event(self):
+        folder = Path(config.get('recordings_dir') or
+                      Path.home() / 'Documents' / 'noScribe' / t('record_folder_name'))
+
+        def done(path):
+            config['last_record_device'] = dialog.selected_device_name
+            self.set_audio_files([str(path)])
+            self.logn(t('record_saved', file=str(path)), link=f'file://{path}')
+
+        dialog = RecordDialog(self, t, folder, done,
+                              last_device=config.get('last_record_device', ''))
+
+    def set_audio_files(self, fn):
+        """Use the given files as input, like a selection in the open dialog."""
+        if tuple(fn) != tuple(self.audio_files_list):
+            self.entry_speaker_names.delete(0, 'end')
+        self.audio_files_list = fn
+        msg = t('log_audio_file_selected')
+        for f in fn:
+            msg += f'\n{f}'
+        self.logn()
+        self.logn(msg)
+        if len(fn) == 1:
+            self.button_audio_file_name.configure(text=os.path.basename(self.audio_files_list[0]))
+        else:
+            self.button_audio_file_name.configure(text=t('multiple_audio_files'))
+            # A batch never opens the save dialog (which carries the format
+            # list), so ask once for the format of all transcripts here.
+            # Cancelling keeps the format of the previous run.
+            self.set_output_filetype(self.ask_output_format())
+        self.create_default_transcript_names()
 
     def button_transcript_file_event(self):
         if len(self.audio_files_list) == 0:
@@ -3468,13 +3503,18 @@ class App(ctk.CTk):
                             txt = utils.html_to_text(d.asHTML(), use_only_body=True)
                         elif job.output_format == 'vtt':
                             txt = utils.html_to_webvtt(d.asHTML(), media_path=job.audio_file)
+                        elif job.output_format == 'pdf':
+                            txt = pdf_export.html_to_pdf_bytes(d.asHTML(), footer_label='noScribe')
                         else:
                             raise TypeError(f'Invalid file type "{job.output_format}".')
                         try:
                             if txt != '':
-                                with open(job.transcript_file, 'w', encoding="utf-8") as f:
-                                    f.write(txt)
-                                    f.flush()
+                                if isinstance(txt, bytes):
+                                    Path(job.transcript_file).write_bytes(txt)
+                                else:
+                                    with open(job.transcript_file, 'w', encoding="utf-8") as f:
+                                        f.write(txt)
+                                        f.flush()
                                 last_auto_save = datetime.datetime.now()
                         except Exception:
                             # other error while saving, maybe the file is already open in Word and cannot be overwritten
@@ -3488,7 +3528,10 @@ class App(ctk.CTk):
 
                             # `job.transcript_file` is for sure a `Path` here as we
                             # called `create_unique_filenames`.
-                            job.transcript_file.write_text(txt, encoding="utf-8")
+                            if isinstance(txt, bytes):
+                                job.transcript_file.write_bytes(txt)
+                            else:
+                                job.transcript_file.write_text(txt, encoding="utf-8")
 
                             self.logn()
                             self.logn(t('rescue_saving', file=job.transcript_file), 'error', link=f'file://{job.transcript_file}')

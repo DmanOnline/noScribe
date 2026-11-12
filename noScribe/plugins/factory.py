@@ -7,6 +7,8 @@ from typing import Mapping
 from pathlib import Path
 
 from ..inference import LocalInferenceBackend, LocalWorkerSettings
+from .local_canary import LocalCanaryPlugin
+from .local_canary.settings import CanaryWorkerSettings
 from .local_pyannote import LocalPyannotePlugin
 from .local_whisper import LocalWhisperPlugin
 from .local_whisper.settings import WhisperWorkerSettings
@@ -27,8 +29,14 @@ def create_builtin_registry(
     whisper_models: Mapping[str, str],
     settings: LocalWorkerSettings | None = None,
     settings_dir: Path | None = None,
+    canary_models: Mapping[str, str] | None = None,
 ) -> BackendRegistry:
-    """Create the registry without treating built-ins as special at runtime."""
+    """Create the registry without treating built-ins as special at runtime.
+
+    ``canary_models`` maps model IDs to Canary ONNX folders, normally from
+    ``local_canary.discover_canary_models()``. Without it the Canary plugin is
+    registered with an empty catalogue.
+    """
     store = PluginSettingsStore(settings_dir) if settings_dir is not None else None
     whisper_settings = WhisperWorkerSettings.from_mapping(
         store.load("local-whisper") if store else {},
@@ -44,6 +52,12 @@ def create_builtin_registry(
             device="cpu" if settings.force_diarization_cpu else "auto",
         ) if settings is not None else None,
     )
+    canary_settings = CanaryWorkerSettings.from_mapping(
+        store.load("local-canary") if store else {},
+        defaults=CanaryWorkerSettings(
+            cpu_threads=settings.cpu_threads,
+        ) if settings is not None else None,
+    )
     # Keep legacy desktop consumers (including its preliminary VAD) in sync.
     if settings is not None:
         settings.cpu_threads = whisper_settings.cpu_threads
@@ -57,6 +71,7 @@ def create_builtin_registry(
     return BackendRegistry([
         LocalWhisperPlugin(host, whisper_models, settings_store=store),
         LocalPyannotePlugin(host, settings_store=store),
+        LocalCanaryPlugin(canary_models or {}, canary_settings, settings_store=store),
     ])
 
 
