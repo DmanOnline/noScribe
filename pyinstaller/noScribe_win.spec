@@ -82,7 +82,14 @@ if torchvision_path:
         noScribe_binaries.append((torchvision_stable_extension, 'torchvision'))
 noScribe_hiddenimports += collect_submodules('pyannote')
 noScribe_hiddenimports += collect_submodules('scipy')
-# noScribe_hiddenimports += ['scipy._lib.array_api_compat.numpy.fft']
+# scipy loads its array-API backends at runtime (e.g. array_api_compat.numpy.fft),
+# which static analysis misses; pyannote needs them. Older scipy used
+# scipy._lib.array_api_compat, newer scipy scipy._external.array_api_compat.
+for _pkg in ('scipy._external', 'scipy._lib.array_api_compat'):
+    try:
+        noScribe_hiddenimports += collect_submodules(_pkg)
+    except Exception:
+        pass
 
 noScribe_a = Analysis(
     ['../noScribe/__main__.py'],
