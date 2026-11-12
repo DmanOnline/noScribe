@@ -15,6 +15,10 @@ if platform.system() == "Darwin" and platform.machine() == "x86_64":
     os.environ.setdefault("MKL_THREADING_LAYER", "GNU")
     os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")  # temp workaround for iomp5 dup
 
+# Window step of the segmentation on the CPU, in seconds (pyannote: 1 s).
+CPU_SEGMENTATION_STEP_S = 2.5
+
+
 def load_waveform(audio_file):
     """Load audio as the in-memory ``(channels, frames)`` float32 tensor +
     sample rate that pyannote's waveform input expects.
@@ -183,6 +187,13 @@ def pyannote_proc_entrypoint(args: dict, q):
         state.update('device_transfer')
         pipeline.to(torch.device(device))
         plog("info", f"using {device}")
+        if device == "cpu":
+            # On the CPU, computing speaker embeddings is ~95% of the work and
+            # one is computed per window. Sliding the 10 s window by 2.5 s
+            # instead of 1 s makes diarization ~2.3x faster; speaker
+            # assignment matched the 1 s step for 97-99% of the speech in
+            # tests (12-11-2026). A 5 s step lost a speaker, so not further.
+            pipeline._segmentation.step = CPU_SEGMENTATION_STEP_S
 
         seg_list = []
         state.update('diarization')
