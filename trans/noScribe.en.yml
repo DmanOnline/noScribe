@@ -14,11 +14,11 @@ en:
 
     1. Audio: choose a file on the left with 📂, or record directly with the pink microphone button 🎙.
     2. Output as: choose the transcript format. PDF is the default. Choose HTML if you want to review the transcript in the noScribe Editor afterwards.
-    3. Language: choose the spoken language. Canary cannot detect the language itself.
-    4. Model: "Canary" is the default model, for Dutch and 24 other European languages. "fast" (Whisper) is the fallback for other languages. Both run on this computer, nothing is sent to the internet.
+    3. Language: choose the spoken language. With "Auto" the model detects it.
+    4. Model: "fast" (Whisper large-v3-turbo) is the default model. It runs on this computer, nothing is sent to the internet.
     5. Press Start. The transcript appears here while it is being made and is saved automatically.
 
-    Please be patient: on a laptop without a dedicated graphics card, transcription can take about as long as the recording itself. Test your settings on a short section first (Start = 00:00:00 and Stop = 00:03:00 transcribes the first 3 minutes).
+    Please be patient: on a laptop without a dedicated graphics card, transcription with speaker detection can take longer than the recording itself. Keep the laptop plugged in; noScribe keeps it from going to sleep. Test your settings on a short section first (Start = 00:00:00 and Stop = 00:03:00 transcribes the first 3 minutes).
 
     Enjoy!
 

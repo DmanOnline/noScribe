@@ -22,7 +22,7 @@ on:
       models:
         description: "Models to test, comma-separated"
         required: false
-        default: "local-canary:canary-1b-v2,local-whisper:fast"
+        default: "local-whisper:fast"
 
 permissions:
   contents: read
@@ -90,7 +90,7 @@ jobs:
           "| Model | Time | Per hour of audio | Word errors |" >> $env:GITHUB_STEP_SUMMARY
           "|---|---|---|---|" >> $env:GITHUB_STEP_SUMMARY
           $models = "${{ inputs.models }}"
-          if (-not $models) { $models = "local-canary:canary-1b-v2,local-whisper:fast" }
+          if (-not $models) { $models = "local-whisper:fast" }
           foreach ($m in $models.Split(",")) {
             $m = $m.Trim()
             $name = $m.Split(":")[1]

@@ -14,11 +14,11 @@ nl:
 
     1. Audio: kies links een bestand met 📂, of neem direct op met de roze microfoonknop 🎙.
     2. Uitvoer als: kies het formaat van het transcript. PDF is standaard. Kies HTML als je het transcript daarna in de noScribe Editor wilt nakijken.
-    3. Taal: kies de taal die gesproken wordt (standaard Nederlands). Canary herkent de taal niet zelf.
-    4. Model: "Canary" is het standaardmodel, voor Nederlands en 24 andere Europese talen. "fast" (Whisper) is de reserve voor andere talen. Beide draaien op deze computer, er gaat niets naar internet.
+    3. Taal: kies de taal die gesproken wordt (standaard Nederlands). Met "Auto" herkent het model de taal zelf.
+    4. Model: "fast" (Whisper large-v3-turbo) is het standaardmodel. Het draait op deze computer, er gaat niets naar internet.
     5. Druk op Start. Het transcript verschijnt hier terwijl het wordt gemaakt en wordt automatisch opgeslagen.
 
-    Heb wat geduld: op een laptop zonder speciale videokaart kan het omzetten ongeveer even lang duren als de opname zelf. Test je instellingen eerst op een kort stuk (Start = 00:00:00 en Stop = 00:03:00 zet de eerste 3 minuten om).
+    Heb wat geduld: op een laptop zonder speciale videokaart kan het omzetten met sprekerherkenning langer duren dan de opname zelf. Zet de laptop aan de stroom; noScribe voorkomt dat hij in slaap valt. Test je instellingen eerst op een kort stuk (Start = 00:00:00 en Stop = 00:03:00 zet de eerste 3 minuten om).
 
     Veel succes!
 

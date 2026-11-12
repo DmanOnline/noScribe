@@ -1,7 +1,9 @@
 name: windows-build
 
-# Builds the Windows CPU version with the models bundled (Canary 1B v2 and
-# Whisper "fast"), as a folder you unzip and run. No NVIDIA GPU needed.
+# Builds the Windows CPU version with Whisper "fast" (large-v3-turbo int8)
+# bundled, plus a per-user installer (setup.exe). No NVIDIA GPU needed.
+# Canary is not bundled: on Windows it was not faster than Whisper (speed test
+# 12-11-2026) and with it the installer exceeds the 2 GB limit of NSIS.
 #
 # Not on every push, because a build takes a while. Start it by hand
 # (Actions > windows-build > Run workflow) or push a version tag, e.g.
@@ -61,22 +63,18 @@ jobs:
         id: modelcache
         uses: actions/cache/restore@v4
         with:
-          path: |
-            models/canary-1b-v2
-            models/fast
-          key: models-${{ hashFiles('tools/download_models.py') }}
+          path: models/fast
+          key: models-fast-${{ hashFiles('tools/download_models.py') }}
 
       - name: Download models
         if: steps.modelcache.outputs.cache-hit != 'true'
-        run: python tools/download_models.py
+        run: python tools/download_models.py --only fast
 
       - name: Save models
         if: steps.modelcache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: |
-            models/canary-1b-v2
-            models/fast
+          path: models/fast
           key: ${{ steps.modelcache.outputs.cache-primary-key }}
 
       # PyInstaller's analysis cache; reused across commits.
@@ -104,8 +102,6 @@ jobs:
         run: |
           $base = "dist/noScribe/_internal"
           foreach ($f in @(
-              "models/canary-1b-v2/encoder-model.int8.onnx",
-              "models/canary-1b-v2/silero-vad/silero_vad.onnx",
               "models/fast/model.bin",
               "noScribe/plugins/local_canary/backend.json",
               "noScribe/plugins/local_whisper/backend.json",
@@ -117,18 +113,11 @@ jobs:
       - name: Smoke test, list models
         run: dist\noScribe\noScribe.exe --help-models
 
-      - name: Smoke test, Canary to PDF (20 s, with speaker detection)
+      - name: Smoke test, Whisper fast to PDF (20 s, with speaker detection)
         shell: pwsh
         run: |
-          dist\noScribe\noScribe.exe --no-gui --model local-canary:canary-1b-v2 --language de --speaker-detection auto --stop 00:00:20 tests\data\interview.mp3 smoke_canary.pdf
-          if (-not (Test-Path smoke_canary.pdf)) { throw "No PDF written" }
-
-      - name: Smoke test, Whisper fast to text (20 s)
-        shell: pwsh
-        run: |
-          dist\noScribe\noScribe.exe --no-gui --model local-whisper:fast --language de --speaker-detection none --stop 00:00:20 tests\data\interview.mp3 smoke_whisper.txt
-          if (-not (Test-Path smoke_whisper.txt)) { throw "No transcript written" }
-          Get-Content smoke_whisper.txt
+          dist\noScribe\noScribe.exe --no-gui --model local-whisper:fast --language de --speaker-detection auto --stop 00:00:20 tests\data\interview.mp3 smoke_whisper.pdf
+          if (-not (Test-Path smoke_whisper.pdf)) { throw "No PDF written" }
 
       # The installer: one setup.exe, installs per user (no admin rights needed),
       # with Start menu and desktop shortcuts.

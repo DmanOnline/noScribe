@@ -945,9 +945,10 @@ def _prepare_model_menu(app, menu) -> None:
 
 def _model_selection_label(app, preferred_ref: str | None) -> str | None:
     """Keep an available selection, otherwise prefer the bundled precise model."""
-    for ref in (preferred_ref, "local-canary:canary-1b-v2",
+    for ref in (preferred_ref,
+                str(ModelRef(LOCAL_WHISPER_BACKEND, "fast")),
                 str(ModelRef(LOCAL_WHISPER_BACKEND, "precise")),
-                str(ModelRef(LOCAL_WHISPER_BACKEND, "fast"))):
+                "local-canary:canary-1b-v2"):
         if ref in app.transcription_model_labels:
             return app.transcription_model_labels[ref]
     return next(iter(app.transcription_model_options), None)
@@ -1175,7 +1176,7 @@ class App(ctk.CTk):
                                                        values=list(self.transcription_model_options.keys()),
                                                        dynamic_resizing=False)
         self.option_menu_whisper_model.grid(column=1, row=3, sticky='e', pady=5)
-        last_whisper_model = str(_model_ref(get_config('last_whisper_model', 'local-canary:canary-1b-v2')))
+        last_whisper_model = str(_model_ref(get_config('last_whisper_model', 'local-whisper:fast')))
         selected_label = _model_selection_label(self, last_whisper_model)
         if selected_label is not None:
             self.option_menu_whisper_model.set(selected_label)
